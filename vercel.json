@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/[[...payload]]": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/[[...payload]]"
+    }
+  ]
+}
