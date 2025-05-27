@@ -66,13 +66,6 @@ Payload CMS automatically generates REST and GraphQL APIs for all collections. T
 
 * **Purpose:** To retrieve the schema/definition of a specific form by its ID or slug, allowing a frontend to dynamically render it.
 * **Endpoint:** `GET /api/forms`
-* **Example (Fetch by Slug for 'Contact Us' form):**
-    ```
-    GET [https://weframe-tech-57kt.vercel.app/api/forms?where](https://weframe-tech-57kt.vercel.app/api/forms?where)[slug][equals]=contact-us
-    ```
-* **Headers:**
-    * `x-payload-tenant: [TENANT_ID]` (Required to fetch forms belonging to a specific tenant)
-    * `Authorization: Bearer [ADMIN_TOKEN]` (If authenticated access is required for fetching forms, though forms can be public by default)
 * **Usage:** A frontend application would typically fetch this form definition and then iterate over its `fields` array to render appropriate UI components.
 
 ### 2. Form Submission
@@ -83,9 +76,6 @@ Payload CMS automatically generates REST and GraphQL APIs for all collections. T
     ```bash
     curl --location '[https://weframe-tech-57kt.vercel.app/api/form-submissions](https://weframe-tech-57kt.vercel.app/api/form-submissions)' \
     --header 'Content-Type: application/json' \
-    --header 'x-payload-tenant: YOUR_ACTUAL_TENANT_UUID' \
-    --data-raw '{
-      "form": "YOUR_CONTACT_US_FORM_UUID",
       "submissionData": [
         { "field": "fullName", "value": "Submitted Name" },
         { "field": "emailAddress", "value": "submit@example.com" },
