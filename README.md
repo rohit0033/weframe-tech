@@ -1,67 +1,113 @@
-# Payload Blank Template
+# WeframeTech Backend Hiring Task: Payload CMS with Multi-Tenancy & Form Builder
 
-This template comes configured with the bare minimum to get started on anything you need.
+This project demonstrates the implementation of a robust backend system using Payload CMS, integrating with PostgreSQL (Supabase) for data storage, and implementing key features like a dynamic Form Builder and Multi-Tenancy. The application is deployed on Vercel.
 
-## Quick start
+## 🚀 Deployment
 
-This template can be deployed directly from our Cloud hosting and it will setup MongoDB and cloud S3 object storage for media.
+The application is deployed on Vercel's free tier.
+**Deployed URL:** [https://weframe-tech-57kt.vercel.app/](https://weframe-tech-57kt.vercel.app/) 
+**Admin Panel:** [https://weframe-tech-57kt.vercel.app/admin](https://weframe-tech-57kt.vercel.app/admin)
 
-## Quick Start - local setup
+## 🗃️ Database Provider
 
-To spin up this template locally, follow these steps:
+**Supabase (PostgreSQL)** is used as the database provider.
 
-### Clone
+* **Details:** Supabase offers a powerful and scalable PostgreSQL database, along with features like authentication and real-time capabilities. For this task, its PostgreSQL capabilities were leveraged to store Payload CMS data efficiently.
+* **Connection:** The connection string is managed via the `DATABASE_URI` environment variable, configured securely in Vercel.
 
-After you click the `Deploy` button above, you'll want to have standalone copy of this repo on your machine. If you've already cloned this repo, skip to [Development](#development).
+## ✨ Implemented Features
 
-### Development
+### 1. Form Builder
 
-1. First [clone the repo](#clone) if you have not done so already
-2. `cd my-project && cp .env.example .env` to copy the example environment variables. You'll need to add the `MONGODB_URI` from your Cloud project to your `.env` if you want to use S3 storage and the MongoDB database that was created for you.
+The official Payload CMS Form Builder plugin (`@payloadcms/plugin-form-builder`) was installed and configured to allow for the creation and management of dynamic forms directly from the Payload Admin Panel.
 
-3. `pnpm install && pnpm dev` to install dependencies and start the dev server
-4. open `http://localhost:3000` to open the app in your browser
+* **Setup Steps:**
+    1.  Installed the plugin: `npm install @payloadcms/plugin-form-builder`
+    2.  Integrated the plugin into `src/payload.config.ts` within the `plugins` array.
+    3.  Configured the `fields` option to enable necessary input types (e.g., `text`, `textarea`, `email`, `message`) for form creation.
+* **"Contact Us" Form:**
+    * A "Contact Us" form was created in the Payload Admin Panel with the following fields:
+        * **Full Name** (Text field)
+        * **Email Address** (Email field)
+        * **Message** (Textarea field)
+    * This form is dynamically rendered and its submissions are stored in the `form-submissions` collection.
 
-That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
+### 2. Multi-Tenancy
 
-#### Docker (Optional)
+Multi-tenancy was implemented using the official Payload CMS Multi-Tenant plugin (`@payloadcms/plugin-multi-tenant`), ensuring data isolation between different tenants.
 
-If you prefer to use Docker for local development instead of a local MongoDB instance, the provided docker-compose.yml file can be used.
+* **Setup Steps:**
+    1.  Installed the plugin: `npm install @payloadcms/plugin-multi-tenant`
+    2.  Integrated the plugin into `src/payload.config.ts` within the `plugins` array.
+    3.  Defined a `tenants` collection in `src/payload.config.ts` with `name` and `slug` fields to manage different tenants.
+    4.  Applied multi-tenancy to the `forms` and `form-submissions` collections within the plugin configuration:
+        ```typescript
+        multiTenantPlugin({
+          collections: {
+            forms: {}, // Multi-tenancy applied to Forms
+            'form-submissions': {}, // Multi-tenancy applied to Form Submissions
+          },
+          // ... other optional configurations
+        })
+        ```
+* **Data Isolation:**
+    * Each tenant now has its own set of forms. For example, a form created under "Tenant A" will not be visible when "Tenant B" is selected in the admin panel.
+    * Form submissions are also tied to the specific tenant under which they were submitted or associated, ensuring a tenant can only manage and view their own form data.
+* **Admin Panel Functionality:**
+    * A `Tenants` collection is available in the admin panel to create and manage tenant records.
+    * A tenant selector dropdown appears in the top-right of the admin panel, allowing administrators to switch context and view data relevant to the selected tenant.
+    * Admin users are assigned to specific tenants to control their data access.
 
-To do so, follow these steps:
+## 🔌 API Endpoints
 
-- Modify the `MONGODB_URI` in your `.env` file to `mongodb://127.0.0.1/<dbname>`
-- Modify the `docker-compose.yml` file's `MONGODB_URI` to match the above `<dbname>`
-- Run `docker-compose up` to start the database, optionally pass `-d` to run in the background.
+Payload CMS automatically generates REST and GraphQL APIs for all collections. The following REST endpoints were primarily used and tested for the form builder and multi-tenancy functionalities:
 
-## How it works
+### 1. Form Fetch
 
-The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
+* **Purpose:** To retrieve the schema/definition of a specific form by its ID or slug, allowing a frontend to dynamically render it.
+* **Endpoint:** `GET /api/forms`
+* **Example (Fetch by Slug for 'Contact Us' form):**
+    ```
+    GET [https://weframe-tech-57kt.vercel.app/api/forms?where](https://weframe-tech-57kt.vercel.app/api/forms?where)[slug][equals]=contact-us
+    ```
+* **Headers:**
+    * `x-payload-tenant: [TENANT_ID]` (Required to fetch forms belonging to a specific tenant)
+    * `Authorization: Bearer [ADMIN_TOKEN]` (If authenticated access is required for fetching forms, though forms can be public by default)
+* **Usage:** A frontend application would typically fetch this form definition and then iterate over its `fields` array to render appropriate UI components.
 
-### Collections
+### 2. Form Submission
 
-See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
+* **Purpose:** To submit responses to a form.
+* **Endpoint:** `POST /api/form-submissions`
+* **Example:**
+    ```bash
+    curl --location '[https://weframe-tech-57kt.vercel.app/api/form-submissions](https://weframe-tech-57kt.vercel.app/api/form-submissions)' \
+    --header 'Content-Type: application/json' \
+    --header 'x-payload-tenant: YOUR_ACTUAL_TENANT_UUID' \
+    --data-raw '{
+      "form": "YOUR_CONTACT_US_FORM_UUID",
+      "submissionData": [
+        { "field": "fullName", "value": "Submitted Name" },
+        { "field": "emailAddress", "value": "submit@example.com" },
+        { "field": "message", "value": "This is a new submission via API." }
+      ]
+    }'
+    ```
 
-- #### Users (Authentication)
+## 👨‍💻 Local Development Setup
 
-  Users are auth-enabled collections that have access to the admin panel.
+To run this project locally:
 
-  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/main/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
+1.  **Clone the repository:** `git clone [YOUR_REPO_URL] `
+2.  **Navigate into the project directory:** `cd [YOUR_PROJECT_NAME]`
+3.  **Install dependencies:** `npm install` (or `pnpm install` if you prefer pnpm)
+4.  **Create a `.env` file:** Copy the content from `.env.example` (if provided) or manually create it:
+    ```env
+    DATABASE_URI="postgresql://postgres:[YOUR_LOCAL_DB_PASSWORD]@localhost:5432/postgres" # Or your Supabase local connection string
+    PAYLOAD_SECRET="YOUR_LOCAL_RANDOM_PAYLOAD_SECRET"
+    PAYLOAD_PUBLIC_SERVER_URL="http://localhost:3000"
+    ```
+5.  **Start the development server:** `npm run dev`
+6.  **Access admin panel:** Open `http://localhost:3000/admin` in your browser.
 
-- #### Media
-
-  This is the uploads enabled collection. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
-
-### Docker
-
-Alternatively, you can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
-
-1. Follow [steps 1 and 2 from above](#development), the docker-compose file will automatically use the `.env` file in your project root
-1. Next run `docker-compose up`
-1. Follow [steps 4 and 5 from above](#development) to login and create your first admin user
-
-That's it! The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
-
-## Questions
-
-If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).
+---
